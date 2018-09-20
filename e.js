@@ -6,7 +6,7 @@ var arg2 = process.argv[3];
 var arg3 = process.argv[4];
 var arg4 = process.argv[5];
 
-if( (arg1 === "-n") && (arg3 === "-r") ){//生成题目
+if( (arg1 === "-n") && (arg3 === "-r") ){//参数控制：生成题目
 	
 	arg2 = Math.floor(arg2);//取整
 	if( arg2 > 0 && arg2 <= 10000 ){
@@ -32,7 +32,7 @@ if( (arg1 === "-n") && (arg3 === "-r") ){//生成题目
 	}
 	
 }
-else if( (arg1 === "-e") && (arg3 === "-a") ){//检查题目
+else if( (arg1 === "-e") && (arg3 === "-a") ){//参数控制：检查题目
 	
 	arg2 = arg2 ? arg2 : "exercisefile.txt";
 	arg4 = arg4 ? arg4 : "answerfile.txt";
@@ -53,8 +53,8 @@ function convert(str){//将任何数转成真分数（小数不换）
 	
 	//整数 2 = 2'1/1
 	//真分数 3/8
-	//假分数 2'2/3
-	//带分数 1'1/1
+	//假分数 5/3
+	//带分数 1'1/2
 	
 	if( str.indexOf("/") >= 0 ){//真分数或带分数
 		
@@ -129,15 +129,41 @@ function produce(n, range){
 	
 	console.log(symbolChoice);
 	
-	
+	var numType;
 	var numChoice = [];
+	var up, down;
 	
+	for( var b = 0; b < symbolNum + 1; b++ ){
+		
+		numType = Math.random();
+		
+		if( numType <= 7 / 10 ){//生成整数
+			
+			numChoice.push( Math.floor(Math.random()*range) + "" );
+			
+		}
+		else{//生成分数或1（避免生成分子或分母为0）
+			
+			up = Math.ceil( Math.random() * range );
+			down = Math.ceil( Math.random() * range );
+			
+			if( up === down ){//分子分母相同
+				numChoice.push("1");
+			}
+			else{
+				numChoice.push( up + "/" + down );
+			}
+			
+		}
+		
+	}
 	
+	console.log(numChoice);
 	
 }
 
 
-function judge(file1,file2){
+function judge(file1,file2){//读取文件并判断正误
 	
 	console.log(file1,file2)
 	
