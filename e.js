@@ -19,6 +19,8 @@ function convert(str){//将任何数转成真分数（小数不换）
 	//假分数 5/3
 	//带分数 1'1/2
 	
+	//console.log(str)
+	
 	if( str.indexOf("/") >= 0 ){//真分数或带分数
 		
 		if( str.indexOf("'") >= 0 ){//带分数
@@ -51,6 +53,23 @@ function convert(str){//将任何数转成真分数（小数不换）
 	//console.log(str);
 }
 
+function simplify(str){//化简分数
+	
+	var up = str.split("/")[0];
+	var down = str.split("/")[1];
+	
+	var t = gcd(+up,+down);
+	
+	up = ( +up ) / ( +t );
+	down = ( +down ) / ( +t );
+	
+	if(down === 1){
+		return up + "";
+	}
+	
+	return up + "/" + down;
+}
+
 function calculate(num1,num2,operator){//根据数字和符号进行分数运算
 	
 	var n1 = [];
@@ -78,6 +97,25 @@ function calculate(num1,num2,operator){//根据数字和符号进行分数运算
 	
 	//console.log(result);
 	return result;
+	
+}
+
+function removeOperator(arr, elem){//移除第一个读到的运算符
+	
+	var index = arr.indexOf(elem);
+	if (index > -1) {
+		arr.splice(index, 1);
+	}
+	return arr;
+}
+
+function replaceNumber(arr, elem, num){//从elem开始，移除两个数，并用一个新的数num替代
+	
+	var index = arr.indexOf(elem);
+	if (index > -1) {
+		arr.splice(index, 2, num);
+	}
+	return arr;
 	
 }
 
@@ -154,7 +192,7 @@ function produceNumber(symbolNum, range){//产生数字
 			}
 			
 			var tmp = Math.random();//是否产生带分数
-			if( tmp <= 1/2 ){//产生带分数
+			if( tmp <= 1/4 ){//产生带分数
 				
 				while(up <= down || (up%down === 0) ){//重新产生带分数
 					
@@ -236,12 +274,12 @@ function produceExpression(n, range){//产生n个表达式字符串
 	var tmp = "";
 	var rightArray = produceRightArray(n,range);
 	
-	for(var a  = 0; a < n; a++ ){
+	for(var a = 0; a < n; a++ ){
 		
 		tmp = "";
 		tmp += rightArray[a][1][0];
 		
-		for(var b  = 0; b < rightArray[a][0].length; b++ ){//符号+数字	
+		for(var b = 0; b < rightArray[a][0].length; b++ ){//符号+数字	
 			tmp += rightArray[a][0][b] + rightArray[a][1][b+1];			
 		}
 		
@@ -253,22 +291,25 @@ function produceExpression(n, range){//产生n个表达式字符串
 	return expression;
 }
 
-function produceAnswer(n,range){
+function produceExercise(n,range){//产生n个习题（题目+答案）
 	
 	var expression = [];	
-	var tmp = "";
+	var tmp = "";//保存用于产生结果的算式
+	var tmp1 = "";//保存用于产生题目的算式
+	
 	var rightArray = produceRightArray(n,range);
 	
-	for(var a  = 0; a < n; a++ ){//遍历每个产生的结果数组，分别验算结果是否非负
+	for(var a = 0; a < n; a++ ){//遍历每个产生的结果数组，分别验算结果是否非负
 		
 		tmp = "";
+		tmp1 = ""
 		tmp += "(" + convert(rightArray[a][1][0]) + ")" ;
+		tmp1 += rightArray[a][1][0];
 		
-		for(var b  = 0; b < rightArray[a][0].length; b++ ){//符号+数字	
-			tmp += rightArray[a][0][b] + "(" + convert(rightArray[a][1][b+1]) + ")";		
+		for(var b = 0; b < rightArray[a][0].length; b++ ){//符号+数字	
+			tmp += rightArray[a][0][b] + "(" + convert(rightArray[a][1][b+1]) + ")";
+			tmp1 += " " + rightArray[a][0][b] + " " + rightArray[a][1][b+1];			
 		}
-		//console.log(tmp);
-		//expression.push(tmp);
 		
 		while( eval(tmp) < 0 ){//不允许产生算式最终值小于0的情况
 			
@@ -276,29 +317,146 @@ function produceAnswer(n,range){
 			
 			
 			tmp = "";
+			tmp1 = "";
 			tmp += convert(rightArray[a][1][0]);
+			tmp1 += rightArray[a][1][0];
 		
 			for(var c = 0; c < rightArray[a][0].length; c++ ){//符号+数字	
-				tmp += rightArray[a][0][c] +  "(" +  convert(rightArray[a][1][c+1]) + ")";			
+				tmp += rightArray[a][0][c] +  "(" +  convert(rightArray[a][1][c+1]) + ")";
+				tmp1 += " " + rightArray[a][0][c] + " " + rightArray[a][1][c+1];
 			}
 			
 			
 		}
-		
+		//console.log(tmp);
+		expression.push(tmp1);
 	}
 	
-	console.log(rightArray);
+	//console.log(expression)
 	
+	//console.log(rightArray);
 	
+	//遍历符号列表，根据优先级（先乘除，后加减）对数进行运算，并更新运算结果（逐一替换）至数组
 	
+	var tmpArray = rightArray;
+	var operator;
 	
+	var symIndex;
+	var numIndex1, numIndex2;
+	
+	var answer = [];
+	
+	for(var d = 0; d < n; d++){
+		
+		for(var e = 0; e < tmpArray[d][0].length; e++){//先进行乘除运算
+			
+			operator = tmpArray[d][0][e];
+			
+			switch(operator){
+				
+				case "*":
+					//console.log(tmpArray[d][1][e],tmpArray[d][1][e+1]);
+					
+					
+					replaceNumber(tmpArray[d][1],tmpArray[d][1][e],calculate(  convert(tmpArray[d][1][e]),convert(tmpArray[d][1][e+1]),operator  )     );
+					removeOperator(tmpArray[d][0],"*");
+					e--;
+					break;
+				
+				case "/":
+					//console.log(tmpArray[d][1][e],tmpArray[d][1][e+1]);
+					
+					
+					replaceNumber(tmpArray[d][1],tmpArray[d][1][e],calculate(  convert(tmpArray[d][1][e]),convert(tmpArray[d][1][e+1]),operator  )     );
+					removeOperator(tmpArray[d][0],"/");
+					e--;
+					break;
+				
+			}
+			
+			
+			
+		}
+		
+		//console.log(tmpArray)
+		
+		for(var f = 0; f < tmpArray[d][0].length; f++){//后进行加减运算
+			
+			operator = tmpArray[d][0][f];
+			
+			switch(operator){
+				
+				case "+":
+					//console.log(tmpArray[d][1][f],tmpArray[d][1][f+1]);
+					
+					
+					replaceNumber(tmpArray[d][1],tmpArray[d][1][f],calculate(  convert(tmpArray[d][1][f]),convert(tmpArray[d][1][f+1]),operator  )     );
+					removeOperator(tmpArray[d][0],"+");
+					f--;
+					break;
+				
+				case "-":
+					//console.log(tmpArray[d][1][f],tmpArray[d][1][f+1]);
+					
+					
+					replaceNumber(tmpArray[d][1],tmpArray[d][1][f],calculate(  convert(tmpArray[d][1][f]),convert(tmpArray[d][1][f+1]),operator  )     );
+					removeOperator(tmpArray[d][0],"-");
+					f--;
+					break;
+				
+			}
+			
+		}
+		
+		answer.push( simplify(tmpArray[d][1][0]) );
+	}
+	
+	//console.log(answer);
+	
+	return [expression,answer];
 	
 }
 
 function produce(n, range){//产生结果
 	
-	var expression = produceExpression(n, range);
-	produceAnswer(n, range);
+	var exercise = produceExercise(n, range);
+	
+	var expression = exercise[0];
+	var answer = exercise[1];
+	
+	var expressionText = "";
+	var answerText = "";
+	
+	for( var a = 0 ; a < n ; a++ ){
+		
+		expressionText += a + ". " + expression[a] + "\r\n";
+		answerText += a + ". " + answer[a] + "\r\n";
+		
+	}
+	
+	console.log(expressionText)
+	
+	
+	var fs = require("fs");
+	
+	fs.writeFile('Exercises.txt', expressionText,  function(err) {
+		if (err) {
+			return console.error(err);
+		}
+		console.log("题目数据写入成功！请查看 Exercises.txt ");
+		console.log("--------我是分割线-------------")
+	});
+	
+	console.log(answerText);
+	
+	fs.writeFile('Answers.txt', answerText,  function(err) {
+		if (err) {
+			return console.error(err);
+		}
+		console.log("答案数据写入成功！请查看 Answers.txt ");
+		console.log("--------我是分割线-------------")
+	});
+	
 }
 
 /****************************/
@@ -309,13 +467,14 @@ function produce(n, range){//产生结果
 
 function judge(file1,file2){//读取文件并判断正误
 	
-	console.log(file1,file2)
+	console.log("习题文件：" + file1);
+	console.log("答案文件：" + file2);
 	
 	var fs = require("fs");
-	
 	fs.readFile(file1, function (err1, data1) {// 异步读取练习题
 	
 		if (err1) {
+			console.log("习题文件 " + file1 + " 读取失败！");
 			return console.error(err1);
 		}
 		
@@ -324,6 +483,7 @@ function judge(file1,file2){//读取文件并判断正误
 		fs.readFile(file2, function (err2, data2) {// 异步读取答案
 	
 			if (err2) {
+				console.log("习题文件 " + file2 + " 读取失败！");
 				return console.error(err2);
 			}
 		
