@@ -429,12 +429,12 @@ function produce(n, range){//产生结果
 	
 	for( var a = 0 ; a < n ; a++ ){
 		
-		expressionText += a + ". " + expression[a] + "\r\n";
-		answerText += a + ". " + answer[a] + "\r\n";
+		expressionText += (a+1) + ". " + expression[a] + "\r\n";
+		answerText += (a+1) + ". " + answer[a] + "\r\n";
 		
 	}
 	
-	console.log(expressionText)
+	//console.log(expressionText)
 	
 	
 	var fs = require("fs");
@@ -443,20 +443,21 @@ function produce(n, range){//产生结果
 		if (err) {
 			return console.error(err);
 		}
-		console.log("题目数据写入成功！请查看 Exercises.txt ");
-		console.log("--------我是分割线-------------")
+		
 	});
 	
-	console.log(answerText);
+	//console.log(answerText);
 	
 	fs.writeFile('Answers.txt', answerText,  function(err) {
 		if (err) {
 			return console.error(err);
 		}
-		console.log("答案数据写入成功！请查看 Answers.txt ");
-		console.log("--------我是分割线-------------")
+		
 	});
 	
+	console.log("题目数据写入成功！请查看 Exercises.txt ");
+	console.log("答案数据写入成功！请查看 Answers.txt ");
+	console.log("--------我是分割线-------------")
 }
 
 /****************************/
@@ -464,6 +465,82 @@ function produce(n, range){//产生结果
 /*       检验相关函数       */
 /*                          */
 /****************************/
+
+function validate(str){//计算表达式的值
+	
+	var elemArray = str.match(/[^ . ]+/g);
+	
+	var symbolArray = [];
+	var numberArray = [];
+	
+	var answer;
+	
+	for( var a = 0; a < elemArray.length; a++){
+		if( elemArray[a].match(/\d/) ){
+			numberArray.push(elemArray[a]);
+		}
+		else{
+			symbolArray.push(elemArray[a]);
+		}
+	}
+	
+	var operator;
+	
+	for(var b = 0; b < symbolArray.length; b++){//先进行乘除运算
+			
+		operator = symbolArray[b];
+			
+		switch(operator){
+				
+			case "*":	
+					
+				replaceNumber(numberArray,numberArray[b],calculate(  convert(numberArray[b]),convert(numberArray[b+1]),operator  )     );
+				removeOperator(symbolArray,"*");
+				b--;
+				break;
+				
+			case "/":
+					
+				replaceNumber(numberArray,numberArray[b],calculate(  convert(numberArray[b]),convert(numberArray[b+1]),operator  )     );
+				removeOperator(symbolArray,"/");
+				b--;
+				break;
+				
+			}
+			
+			
+			
+	}
+	
+	for(var c = 0; c < symbolArray.length; c++){//后进行加减运算
+			
+		operator = symbolArray[c];
+			
+		switch(operator){
+				
+			case "+":	
+					
+				replaceNumber(numberArray,numberArray[c],calculate(  convert(numberArray[c]),convert(numberArray[c+1]),operator  )     );
+				removeOperator(symbolArray,"+");
+				c--;
+				break;
+				
+			case "-":
+					
+				replaceNumber(numberArray,numberArray[c],calculate(  convert(numberArray[c]),convert(numberArray[c+1]),operator  )     );
+				removeOperator(symbolArray,"-");
+				c--;
+				break;
+				
+			}
+			
+			
+			
+	}
+	
+	answer = simplify(numberArray[0]);
+	return answer;
+}
 
 function judge(file1,file2){//读取文件并判断正误
 	
@@ -506,12 +583,9 @@ function judge(file1,file2){//读取文件并判断正误
 			for( var a = 0; a < lines1.length; a++ ){//按行读取
 		
 				expression = lines1[a].split(". ")[1];
-				left = eval(expression);
-		
 				answer = lines2[a].split(". ")[1];
-				right = eval(answer);
 		
-				if( Math.abs(right - left) < 1e-10 || Math.abs(left - right) < 1e-10 ){//正确
+				if( validate(expression) === answer ){//正确
 			
 					correct.push( (a + 1) + "" );
 			
@@ -534,7 +608,8 @@ function judge(file1,file2){//读取文件并判断正误
 				if (err) {
 					return console.error(err);
 				}
-				console.log("数据写入成功！");
+				console.log("\n" + result);
+				console.log("成绩数据写入成功！");
 				console.log("--------我是分割线-------------");
 			});
 		
@@ -599,7 +674,7 @@ function main(){
 }
 main();
 
-
+//用法:
 
 //node e.js -n 10 -r 10
 //node e.js -e exercisefile.txt -a answerfile.txt
